@@ -3,13 +3,17 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 
 WORKDIR /src
 
-COPY ["user-auth.csproj", "./"]
+# Copy project file
+COPY ["src/UserAuth.Api/UserAuth.Api.csproj", "src/UserAuth.Api/"]
 
-RUN dotnet restore "user-auth.csproj"
+# Restore dependencies
+RUN dotnet restore "src/UserAuth.Api/UserAuth.Api.csproj"
 
+# Copy source code
 COPY . .
 
-RUN dotnet publish "user-auth.csproj" \
+# Publish application
+RUN dotnet publish "src/UserAuth.Api/UserAuth.Api.csproj" \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false
@@ -24,4 +28,4 @@ COPY --from=build /app/publish .
 
 EXPOSE 8080
 
-ENTRYPOINT ["dotnet", "user-auth.dll"]
+ENTRYPOINT ["dotnet", "UserAuth.Api.dll"]

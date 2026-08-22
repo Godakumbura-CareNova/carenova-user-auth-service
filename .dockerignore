@@ -3,7 +3,6 @@
 **/.env
 **/.git
 **/.gitignore
-**/.github
 **/.project
 **/.settings
 **/.toolstarget
@@ -13,12 +12,16 @@
 **/*.dbmdl
 **/*.ino
 **/bin
+**/obj
 **/charts
 **/docker-compose*
 **/Dockerfile*
 **/node_modules
 **/npm-debug.log
-**/obj
 **/secrets.dev.yaml
 **/values.yaml
+
+tests/
+.github/
+
 README.md
