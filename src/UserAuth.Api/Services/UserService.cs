@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using UserAuth.Api.DTOs.Auth;
 using UserAuth.Api.DTOs.User;
 using UserAuth.Api.Exceptions;
@@ -32,6 +33,7 @@ public class UserService : IUserService
                 .Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
+        var passwordHasher = new PasswordHasher<User>();
         var user = new User
         {
             FullName = fullName,
@@ -44,7 +46,7 @@ public class UserService : IUserService
             Role = "User",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
-            PasswordHash = request.Password
+            PasswordHash = passwordHasher.HashPassword(new User(), request.Password.Trim())
         };
 
         var createdUser = await _userRepository.AddAsync(user, cancellationToken);

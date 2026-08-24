@@ -79,6 +79,53 @@ public class RegisterValidatorTests
     }
 
     [Theory]
+    [InlineData("abc123")]
+    [InlineData("password")]
+    [InlineData("weak@123")]
+    public void Validate_WhenPasswordDoesNotMeetComplexityRequirements_ShouldHaveError(string password)
+    {
+        var request = new RegisterRequestDto
+        {
+            FirstName = "Nimal",
+            LastName = "Perera",
+            Email = "nimal.perera@example.com",
+            Password = password,
+            ConfirmPassword = password,
+            MobileNumber = "+94771234567",
+            LandPhoneNumber = "+94112233445",
+            Address = "No. 12, Colombo 03",
+            DateOfBirth = new DateTime(1998, 5, 10),
+            Gender = "Male"
+        };
+
+        var result = _validator.Validate(request);
+
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(RegisterRequestDto.Password));
+    }
+
+    [Fact]
+    public void Validate_WhenPasswordAndConfirmPasswordDoNotMatch_ShouldHaveError()
+    {
+        var request = new RegisterRequestDto
+        {
+            FirstName = "Nimal",
+            LastName = "Perera",
+            Email = "nimal.perera@example.com",
+            Password = "StrongP@ss1",
+            ConfirmPassword = "StrongP@ss2",
+            MobileNumber = "+94771234567",
+            LandPhoneNumber = "+94112233445",
+            Address = "No. 12, Colombo 03",
+            DateOfBirth = new DateTime(1998, 5, 10),
+            Gender = "Male"
+        };
+
+        var result = _validator.Validate(request);
+
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(RegisterRequestDto.ConfirmPassword));
+    }
+
+    [Theory]
     [InlineData("077123456")]
     [InlineData("94771234567")]
     [InlineData("07123456789")]

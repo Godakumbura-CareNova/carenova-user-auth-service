@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FluentValidation;
 using UserAuth.Api.DTOs.Auth;
 
@@ -20,8 +21,8 @@ public class RegisterValidator : AbstractValidator<RegisterRequestDto>
         RuleFor(x => x.Password)
             .NotEmpty()
             .WithMessage("Password is required.")
-            .MinimumLength(6)
-            .WithMessage("Password must be at least 6 characters long.");
+            .Must(HaveStrongPassword)
+            .WithMessage("Password must be at least 6 characters and include an uppercase letter, lowercase letter, number, and special character.");
 
         RuleFor(x => x.ConfirmPassword)
             .NotEmpty()
@@ -58,6 +59,20 @@ public class RegisterValidator : AbstractValidator<RegisterRequestDto>
             .WithMessage("Gender is required.")
             .Must(g => g == "Male" || g == "Female" || g == "Other")
             .WithMessage("Gender must be Male, Female, or Other.");
+    }
+
+    private static bool HaveStrongPassword(string? password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            return false;
+        }
+
+        return password.Length >= 6
+            && Regex.IsMatch(password, @"[A-Z]")
+            && Regex.IsMatch(password, @"[a-z]")
+            && Regex.IsMatch(password, @"\d")
+            && Regex.IsMatch(password, @"[^A-Za-z0-9]");
     }
 
     private static bool HaveValidFullName(RegisterRequestDto request)
