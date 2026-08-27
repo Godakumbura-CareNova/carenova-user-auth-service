@@ -41,6 +41,11 @@ public class UserServiceTests
         Assert.Equal("Nimal Perera", response.FullName);
         Assert.Equal("nimal.perera@example.com", response.Email);
         Assert.Equal("Male", response.Gender);
+        var createdUser = repository.Invocations
+            .Single(invocation => invocation.Method.Name == nameof(IUserRepository.AddAsync))
+            .Arguments[0] as User;
+        Assert.NotNull(createdUser?.PasswordHash);
+        Assert.NotEqual(request.Password, createdUser.PasswordHash);
         repository.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
