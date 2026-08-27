@@ -28,4 +28,24 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync(cancellationToken);
         return user;
     }
+
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = email.Trim();
+
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail.ToLower(), cancellationToken);
+    }
+
+    public async Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return;
+        }
+
+        user.PasswordHash = newPasswordHash;
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

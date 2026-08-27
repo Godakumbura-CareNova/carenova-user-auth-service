@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +29,15 @@ public class AppDbContext : DbContext
             entity.Property(u => u.Gender).IsRequired().HasMaxLength(20);
             entity.Property(u => u.Role).IsRequired().HasMaxLength(50);
             entity.Property(u => u.CreatedAt).IsRequired();
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.HasKey(t => t.Id);
+            entity.Property(t => t.Token).IsRequired().HasMaxLength(200);
+            entity.HasIndex(t => t.Token).IsUnique();
+            entity.Property(t => t.Expiration).IsRequired();
+            entity.Property(t => t.IsUsed).IsRequired();
         });
     }
 }

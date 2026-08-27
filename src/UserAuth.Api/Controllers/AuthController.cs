@@ -11,12 +11,23 @@ namespace UserAuth.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IAuthService _authService;
     private readonly IValidator<RegisterRequestDto> _registerValidator;
+    private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
+    private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
 
-    public AuthController(IUserService userService, IValidator<RegisterRequestDto> registerValidator)
+    public AuthController(
+        IUserService userService,
+        IAuthService authService,
+        IValidator<RegisterRequestDto> registerValidator,
+        IValidator<ForgotPasswordDto> forgotPasswordValidator,
+        IValidator<ResetPasswordDto> resetPasswordValidator)
     {
         _userService = userService;
+        _authService = authService;
         _registerValidator = registerValidator;
+        _forgotPasswordValidator = forgotPasswordValidator;
+        _resetPasswordValidator = resetPasswordValidator;
     }
 
     [HttpPost("register")]
@@ -41,5 +52,48 @@ public class AuthController : ControllerBase
         {
             return Conflict(new { message = ex.Message });
         }
+    }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto request, CancellationToken cancellationToken)
+    {
+        var validationResult = await _forgotPasswordValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            foreach (var error in validationResult.Errors)
+            {
+                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            }
+            return ValidationProblem(ModelState);
+        }
+
+        await _authService.RequestPasswordResetAsync(request.Email, cancellationToken);
+
+        // Identical response whether or not the email is registered — Scenario 5.
+        return Ok(new { message = "If an account exists with this email, password reset instructions have been sent." });
+    }
+
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto request, CancellationToken cancellationToken)
+    {
+        var validationResult = await _resetPasswordValidator.ValidateAsync(request, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            foreach (var error in validationResult.Errors)
+            {
+                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+            }
+            return ValidationProblem(ModelState);
+        }
+
+        var outcome = await _authService.ResetPasswordAsync(request.Token, request.NewPassword, cancellationToken);
+
+        return outcome switch
+        {
+            PasswordResetOutcome.Success => Ok(new { message = "Your password has been reset successfully." }),
+            PasswordResetOutcome.ExpiredToken => BadRequest(new { message = "This password reset link has expired. Please request a new one." }),
+            PasswordResetOutcome.TokenAlreadyUsed => BadRequest(new { message = "This password reset link has already been used. Please request a new one." }),
+            _ => BadRequest(new { message = "This password reset link is invalid. Please request a new one." }),
+        };
     }
 }
