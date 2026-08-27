@@ -85,6 +85,52 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
+
+    // Local-only seed accounts so every teammate has the same test logins for
+    // every role without manually registering + promoting each one via SQL.
+    // Never runs outside Development — known email/password pairs must never
+    // exist in a deployed environment.
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var hasher = scope.ServiceProvider.GetRequiredService<Microsoft.AspNetCore.Identity.IPasswordHasher<User>>();
+
+        var seedUsers = new[]
+        {
+            new { Email = "test-patient@carenova.dev", FullName = "Test Patient", Role = "Patient", Password = "Patient@2026" },
+            new { Email = "test-doctor@carenova.dev", FullName = "Test Doctor", Role = "Doctor", Password = "Doctor@2026" },
+            new { Email = "test-pharmacy@carenova.dev", FullName = "Test Pharmacy", Role = "PharmacyStaff", Password = "Pharmacy@2026" },
+            new { Email = "admin@carenova.dev", FullName = "System Admin", Role = "Admin", Password = "Admin@2026" },
+        };
+
+        foreach (var seed in seedUsers)
+        {
+            if (db.Users.Any(u => u.Email == seed.Email))
+            {
+                continue;
+            }
+
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                FullName = seed.FullName,
+                Email = seed.Email,
+                MobileNumber = "0000000000",
+                LandPhoneNumber = "0000000000",
+                Address = "Godakumbura Pharmacy & Channelling Centre, Welimada",
+                DateOfBirth = new DateTime(2000, 1, 1),
+                Gender = "Other",
+                Role = seed.Role,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow,
+            };
+            user.PasswordHash = hasher.HashPassword(user, seed.Password);
+
+            db.Users.Add(user);
+        }
+
+        db.SaveChanges();
+    }
 }
 
 app.UseCors("FrontendPolicy");
