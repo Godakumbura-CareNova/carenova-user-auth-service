@@ -1,16 +1,5 @@
-using FluentValidation;
-using UserAuth.Api.DTOs.Auth;
-
 namespace UserAuth.Api.Validators;
 
-public class LoginValidator : AbstractValidator<LoginRequestDto>
+public class LoginValidator
 {
-	public LoginValidator()
-	{
-		RuleFor(x => x.Email)
-			.NotEmpty()
-			.EmailAddress();
-		RuleFor(x => x.Password)
-			.NotEmpty();
-	}
 }

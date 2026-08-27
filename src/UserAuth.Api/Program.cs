@@ -1,12 +1,7 @@
-using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using UserAuth.Api.Config;
 using UserAuth.Api.Data;
-using UserAuth.Api.Models;
 using UserAuth.Api.Repositories;
 using UserAuth.Api.Services;
 using UserAuth.Api.Services.Interfaces;
@@ -16,37 +11,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddOptions<JwtSettings>()
-    .Bind(builder.Configuration.GetSection("JwtSettings"));
-
-var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
-    ?? throw new InvalidOperationException("JWT settings are not configured.");
-if (string.IsNullOrWhiteSpace(jwtSettings.Secret)
-    || string.IsNullOrWhiteSpace(jwtSettings.Issuer)
-    || string.IsNullOrWhiteSpace(jwtSettings.Audience)
-    || jwtSettings.ExpiryInMinutes <= 0)
-{
-    throw new InvalidOperationException("JWT settings must include a secret, issuer, audience, and positive expiry.");
-}
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtSettings.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwtSettings.Audience,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-    });
-
-builder.Services.AddAuthorization();
 
 builder.Services.AddCors(options =>
 {
@@ -61,24 +25,13 @@ builder.Services.AddCors(options =>
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "server=localhost;port=3306;database=carenova_user_auth;uid=root;pwd=Password123!";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    if (!string.IsNullOrWhiteSpace(connectionString))
-    {
-        options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 0)));
-        return;
-    }
-
-    options.UseInMemoryDatabase("CareNovaUserAuthDb");
-});
+    options.UseInMemoryDatabase("CareNovaUserAuthDb"));
 
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterValidator>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
-builder.Services.AddScoped<Microsoft.AspNetCore.Identity.IPasswordHasher<User>, Microsoft.AspNetCore.Identity.PasswordHasher<User>>();
 
 var app = builder.Build();
 
@@ -89,12 +42,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("FrontendPolicy");
 app.UseHttpsRedirection();
-app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
-
-public partial class Program
-{
-}

@@ -11,20 +11,12 @@ namespace UserAuth.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
-    private readonly IAuthService _authService;
     private readonly IValidator<RegisterRequestDto> _registerValidator;
-    private readonly IValidator<LoginRequestDto> _loginValidator;
 
-    public AuthController(
-        IUserService userService,
-        IAuthService authService,
-        IValidator<RegisterRequestDto> registerValidator,
-        IValidator<LoginRequestDto> loginValidator)
+    public AuthController(IUserService userService, IValidator<RegisterRequestDto> registerValidator)
     {
         _userService = userService;
-        _authService = authService;
         _registerValidator = registerValidator;
-        _loginValidator = loginValidator;
     }
 
     [HttpPost("register")]
@@ -48,32 +40,6 @@ public class AuthController : ControllerBase
         catch (DuplicateEmailException ex)
         {
             return Conflict(new { message = ex.Message });
-        }
-    }
-
-    [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken cancellationToken)
-    {
-        var validationResult = await _loginValidator.ValidateAsync(request, cancellationToken);
-        if (!validationResult.IsValid)
-        {
-            foreach (var error in validationResult.Errors)
-            {
-                ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
-            }
-            return ValidationProblem(ModelState);
-        }
-
-        try
-        {
-            var response = await _authService.LoginAsync(request, cancellationToken);
-            return response is null
-                ? Unauthorized(new { message = "Invalid email or password." })
-                : Ok(response);
-        }
-        catch (InactiveAccountException ex)
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
     }
 }
