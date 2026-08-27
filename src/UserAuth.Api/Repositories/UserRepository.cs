@@ -22,6 +22,15 @@ public class UserRepository : IUserRepository
             .AnyAsync(u => u.Email.ToLower() == normalizedEmail.ToLower(), cancellationToken);
     }
 
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = email.Trim().ToLower();
+
+        return await _context.Users
+            .AsNoTracking()
+            .SingleOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail, cancellationToken);
+    }
+
     public async Task<User> AddAsync(User user, CancellationToken cancellationToken = default)
     {
         await _context.Users.AddAsync(user, cancellationToken);
