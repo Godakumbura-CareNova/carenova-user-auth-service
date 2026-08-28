@@ -1,5 +1,9 @@
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using UserAuth.Api.Config;
+using UserAuth.Api.DTOs.Auth;
+using UserAuth.Api.Exceptions;
 using UserAuth.Api.Models;
 using UserAuth.Api.Repositories;
 using UserAuth.Api.Services.Interfaces;
@@ -11,20 +15,59 @@ public class AuthService : IAuthService
     private const int ResetLinkExpiryMinutes = 30;
 
     private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly ITokenService _tokenService;
+    private readonly JwtSettings _jwtSettings;
     private readonly IPasswordResetRepository _passwordResetRepository;
     private readonly IEmailService _emailService;
     private readonly IConfiguration _configuration;
 
     public AuthService(
         IUserRepository userRepository,
+        IPasswordHasher<User> passwordHasher,
+        ITokenService tokenService,
+        IOptions<JwtSettings> jwtOptions,
         IPasswordResetRepository passwordResetRepository,
         IEmailService emailService,
         IConfiguration configuration)
     {
         _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
+        _tokenService = tokenService;
+        _jwtSettings = jwtOptions.Value;
         _passwordResetRepository = passwordResetRepository;
         _emailService = emailService;
         _configuration = configuration;
+    }
+
+    public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByEmailAsync(request.Email.Trim(), cancellationToken);
+        if (user is null || string.IsNullOrWhiteSpace(user.PasswordHash))
+        {
+            return null;
+        }
+
+        var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password.Trim());
+        if (verificationResult == PasswordVerificationResult.Failed)
+        {
+            return null;
+        }
+
+        if (!user.IsActive)
+        {
+            throw new InactiveAccountException("This account is inactive.");
+        }
+
+        return new LoginResponseDto
+        {
+            Token = _tokenService.GenerateToken(user),
+            ExpiresAtUtc = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryInMinutes),
+            UserId = user.Id,
+            Email = user.Email,
+            FullName = user.FullName,
+            Role = user.Role
+        };
     }
 
     public async Task RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)
@@ -74,8 +117,7 @@ public class AuthService : IAuthService
             return PasswordResetOutcome.ExpiredToken;
         }
 
-        var hasher = new PasswordHasher<User>();
-        var newPasswordHash = hasher.HashPassword(new User(), newPassword);
+        var newPasswordHash = _passwordHasher.HashPassword(new User(), newPassword);
 
         await _userRepository.UpdatePasswordHashAsync(resetToken.UserId, newPasswordHash, cancellationToken);
         await _passwordResetRepository.MarkAsUsedAsync(resetToken, cancellationToken);

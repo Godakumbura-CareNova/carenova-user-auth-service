@@ -49,11 +49,17 @@ public class EmailService : IEmailService
             };
             message.To.Add(toEmail);
 
-            using var client = new SmtpClient(_settings.SmtpServer, _settings.Port)
-            {
-                Credentials = new NetworkCredential(_settings.Username, _settings.Password),
-                EnableSsl = true,
-            };
+            // Gmail displays App Passwords with spaces for readability (e.g. "abcd efgh ijkl
+            // mnop"), but the real credential is the 16 characters with no spaces — sending it
+            // with spaces embedded fails auth with a generic "Authentication Required" error
+            // rather than a clear "wrong password" one, so strip them defensively.
+            var smtpPassword = (_settings.Password ?? string.Empty).Replace(" ", string.Empty);
+
+            using var client = new SmtpClient(_settings.SmtpServer, _settings.Port);
+            client.DeliveryMethod = SmtpDeliveryMethod.Network;
+            client.UseDefaultCredentials = false;
+            client.Credentials = new NetworkCredential(_settings.Username, smtpPassword);
+            client.EnableSsl = true;
 
             await client.SendMailAsync(message, cancellationToken);
         }
