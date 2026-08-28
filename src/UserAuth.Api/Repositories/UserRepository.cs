@@ -28,4 +28,26 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync(cancellationToken);
         return user;
     }
+
+    public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+    }
+
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var normalizedEmail = email.Trim();
+
+        return await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail.ToLower(), cancellationToken);
+    }
+
+    public async Task<User> UpdateAsync(User user, CancellationToken cancellationToken = default)
+    {
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
+        return user;
+    }
 }
