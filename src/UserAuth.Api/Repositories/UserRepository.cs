@@ -28,4 +28,16 @@ public class UserRepository : IUserRepository
         await _context.SaveChangesAsync(cancellationToken);
         return user;
     }
+
+    public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return _context.Users.FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
+    }
+
+    public async Task<User> UpdateAsync(User user, CancellationToken cancellationToken = default)
+    {
+        _context.Users.Update(user);
+        await _context.SaveChangesAsync(cancellationToken);
+        return user;
+    }
 }
