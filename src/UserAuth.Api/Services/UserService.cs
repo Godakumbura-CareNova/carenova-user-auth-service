@@ -11,10 +11,12 @@ namespace UserAuth.Api.Services;
 public class UserService : IUserService
 {
     private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher<User> _passwordHasher;
 
-    public UserService(IUserRepository userRepository)
+    public UserService(IUserRepository userRepository, IPasswordHasher<User>? passwordHasher = null)
     {
         _userRepository = userRepository;
+        _passwordHasher = passwordHasher ?? new PasswordHasher<User>();
     }
 
     public async Task<UserResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
@@ -33,7 +35,6 @@ public class UserService : IUserService
                 .Where(part => !string.IsNullOrWhiteSpace(part)));
         }
 
-        var passwordHasher = new PasswordHasher<User>();
         var user = new User
         {
             FullName = fullName,
@@ -43,10 +44,10 @@ public class UserService : IUserService
             Address = request.Address.Trim(),
             DateOfBirth = request.DateOfBirth,
             Gender = request.Gender.Trim(),
-            Role = "User",
+            Role = RoleNames.Patient,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
-            PasswordHash = passwordHasher.HashPassword(new User(), request.Password.Trim())
+            PasswordHash = _passwordHasher.HashPassword(new User(), request.Password.Trim())
         };
 
         var createdUser = await _userRepository.AddAsync(user, cancellationToken);
@@ -66,4 +67,86 @@ public class UserService : IUserService
             CreatedAt = createdUser.CreatedAt
         };
     }
+
+    public async Task<IReadOnlyList<UserDto>> GetAllUsersAsync(string? search, CancellationToken cancellationToken = default)
+    {
+        var users = await _userRepository.GetAllAsync(cancellationToken);
+
+        var normalizedSearch = search?.Trim();
+        if (!string.IsNullOrWhiteSpace(normalizedSearch))
+        {
+            users = users
+                .Where(u => u.FullName.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase)
+                    || u.Email.Contains(normalizedSearch, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        return users.Select(ToUserDto).ToList();
+    }
+
+    public async Task<UserDto?> GetUserByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        return user is null ? null : ToUserDto(user);
+    }
+
+    public async Task<UserDto?> UpdateUserRoleAsync(Guid userId, UpdateRoleDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        if (!RoleNames.TryNormalize(request.Role, out var normalizedRole))
+        {
+            throw new ArgumentException("Unsupported role.");
+        }
+
+        if (!RoleNames.IsAssignableRole(normalizedRole))
+        {
+            throw new ArgumentException("The Admin role cannot be assigned through this screen.");
+        }
+
+        user.Role = normalizedRole;
+        var updated = await _userRepository.UpdateAsync(user, cancellationToken);
+        return ToUserDto(updated);
+    }
+
+    public async Task<UserDto?> UpdateAccountStatusAsync(Guid userId, UpdateAccountStatusDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        user.IsActive = request.IsActive;
+        var updated = await _userRepository.UpdateAsync(user, cancellationToken);
+        return ToUserDto(updated);
+    }
+
+    private static UserDto ToUserDto(User user)
+    {
+        var role = RoleNames.TryNormalize(user.Role, out var normalizedRole)
+            ? normalizedRole
+            : RoleNames.Patient;
+
+        return new UserDto
+        {
+            Id = user.Id.ToString(),
+            FullName = user.FullName,
+            Email = user.Email,
+            MobileNumber = user.MobileNumber,
+            LandPhoneNumber = AsOptional(user.LandPhoneNumber),
+            Address = AsOptional(user.Address),
+            DateOfBirth = user.DateOfBirth == default ? null : user.DateOfBirth,
+            Gender = AsOptional(user.Gender),
+            Role = role,
+            IsActive = user.IsActive,
+            CreatedAt = user.CreatedAt
+        };
+    }
+
+    private static string? AsOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 }
