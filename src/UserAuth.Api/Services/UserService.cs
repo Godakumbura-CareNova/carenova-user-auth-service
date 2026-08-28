@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using UserAuth.Api.DTOs.Auth;
+using UserAuth.Api.DTOs.Profile;
 using UserAuth.Api.DTOs.User;
 using UserAuth.Api.Exceptions;
 using UserAuth.Api.Models;
@@ -65,5 +66,33 @@ public class UserService : IUserService
             IsActive = createdUser.IsActive,
             CreatedAt = createdUser.CreatedAt
         };
+    }
+
+    public async Task<ProfileDto?> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        return new ProfileDto
+        {
+            Id = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            MobileNumber = AsOptional(user.MobileNumber),
+            LandPhoneNumber = AsOptional(user.LandPhoneNumber),
+            Address = AsOptional(user.Address),
+            DateOfBirth = user.DateOfBirth == default ? null : user.DateOfBirth,
+            Gender = AsOptional(user.Gender),
+            HasProfilePicture = false,
+            ProfilePictureUrl = null
+        };
+    }
+
+    private static string? AsOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 }
