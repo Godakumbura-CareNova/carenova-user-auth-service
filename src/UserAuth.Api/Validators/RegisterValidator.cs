@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using FluentValidation;
 using UserAuth.Api.DTOs.Auth;
 
@@ -8,9 +7,19 @@ public class RegisterValidator : AbstractValidator<RegisterRequestDto>
 {
     public RegisterValidator()
     {
-        RuleFor(x => x)
-            .Must(HaveValidFullName)
-            .WithMessage("Full name is required.");
+        RuleFor(x => x.FirstName)
+            .NotEmpty()
+            .When(x => string.IsNullOrWhiteSpace(x.FullName))
+            .WithMessage("First name is required.");
+
+        RuleFor(x => x.LastName)
+            .NotEmpty()
+            .When(x => string.IsNullOrWhiteSpace(x.FullName))
+            .WithMessage("Last name is required.");
+
+        RuleFor(x => x.FullName)
+            .Must(fullName => string.IsNullOrWhiteSpace(fullName) || fullName.Trim().Length >= 2)
+            .WithMessage("Full name must be at least 2 characters.");
 
         RuleFor(x => x.Email)
             .NotEmpty()
@@ -59,19 +68,6 @@ public class RegisterValidator : AbstractValidator<RegisterRequestDto>
             .WithMessage("Gender is required.")
             .Must(g => g == "Male" || g == "Female" || g == "Other")
             .WithMessage("Gender must be Male, Female, or Other.");
-    }
-
-    private static bool HaveValidFullName(RegisterRequestDto request)
-    {
-        var fullName = request.FullName?.Trim();
-        if (!string.IsNullOrWhiteSpace(fullName))
-        {
-            return fullName.Length >= 2;
-        }
-
-        var firstName = request.FirstName?.Trim();
-        var lastName = request.LastName?.Trim();
-        return !string.IsNullOrWhiteSpace(firstName) && !string.IsNullOrWhiteSpace(lastName);
     }
 
     private static bool BeAtLeastSixteenYearsOld(DateTime dateOfBirth)

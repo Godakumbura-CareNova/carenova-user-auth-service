@@ -6,27 +6,31 @@ on:
       - main
       - develop
       - "feature/**"
+
   pull_request:
     branches:
       - main
       - develop
 
 jobs:
-  build:
-    name: Build User Auth
+  build-and-test:
+    name: Build and Test User Auth
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "10.0.x"
+          dotnet-version: "8.0.x"
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore UserAuth.sln
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build UserAuth.sln --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test UserAuth.sln --no-build --configuration Release

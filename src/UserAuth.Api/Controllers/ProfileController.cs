@@ -3,24 +3,28 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserAuth.Api.DTOs.Profile;
+using UserAuth.Api.Models;
 using UserAuth.Api.Services.Interfaces;
 
 namespace UserAuth.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = RoleNames.AllAuthorizedRoles)]
 public class ProfileController : ControllerBase
 {
+	private readonly IUserService _userService;
 	private readonly IProfileService _profileService;
 	private readonly IValidator<UpdateProfileDto> _profileValidator;
 	private readonly IValidator<ChangePasswordDto> _passwordValidator;
 
 	public ProfileController(
+		IUserService userService,
 		IProfileService profileService,
 		IValidator<UpdateProfileDto> profileValidator,
 		IValidator<ChangePasswordDto> passwordValidator)
 	{
+		_userService = userService;
 		_profileService = profileService;
 		_profileValidator = profileValidator;
 		_passwordValidator = passwordValidator;
@@ -34,7 +38,7 @@ public class ProfileController : ControllerBase
 			return Unauthorized();
 		}
 
-		var profile = await _profileService.GetAsync(userId, cancellationToken);
+		var profile = await _userService.GetProfileAsync(userId, cancellationToken);
 		return profile is null ? NotFound() : Ok(profile);
 	}
 
@@ -78,8 +82,12 @@ public class ProfileController : ControllerBase
 
 	private bool TryGetUserId(out Guid userId)
 	{
-		var value = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub");
-		return Guid.TryParse(value, out userId);
+		userId = Guid.Empty;
+
+		var subject = User.FindFirstValue(ClaimTypes.NameIdentifier)
+			?? User.FindFirstValue("sub");
+
+		return !string.IsNullOrWhiteSpace(subject) && Guid.TryParse(subject, out userId);
 	}
 
 	private void AddValidationErrors(FluentValidation.Results.ValidationResult validation)
