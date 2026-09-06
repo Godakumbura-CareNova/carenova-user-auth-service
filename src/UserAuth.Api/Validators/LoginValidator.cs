@@ -5,16 +5,16 @@ namespace UserAuth.Api.Validators;
 
 public class LoginValidator : AbstractValidator<LoginDto>
 {
-	public LoginValidator()
-	{
-		RuleFor(x => x.Email)
-			.NotEmpty()
-			.WithMessage("Email is required.")
-			.EmailAddress()
-			.WithMessage("Email must be a valid email address.");
+    public LoginValidator()
+    {
+        RuleFor(x => x.Email)
+            .NotEmpty()
+            .WithMessage("Email address is required.")
+            .EmailAddress()
+            .WithMessage("Email address must be a valid format.");
 
-		RuleFor(x => x.Password)
-			.NotEmpty()
-			.WithMessage("Password is required.");
-	}
+        RuleFor(x => x.Password)
+            .NotEmpty()
+            .WithMessage("Password is required.");
+    }
 }
