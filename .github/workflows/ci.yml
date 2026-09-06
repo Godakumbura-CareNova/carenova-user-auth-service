@@ -16,6 +16,9 @@ jobs:
   build-and-test:
     name: Build and Test User Auth
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
 
     steps:
       - name: Checkout code
@@ -32,5 +35,23 @@ jobs:
       - name: Build
         run: dotnet build UserAuth.sln --no-restore --configuration Release
 
-      - name: Run tests
-        run: dotnet test UserAuth.sln --no-build --configuration Release
+      - name: Run tests with coverage
+        run: dotnet test UserAuth.sln --no-build --configuration Release --collect:"XPlat Code Coverage" --results-directory ./TestResults --logger "trx"
+
+      - name: Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: User Auth Test Results
+          path: "TestResults/**/*.trx"
+          reporter: dotnet-trx
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: TestResults/**/coverage.cobertura.xml
+
+      - name: Build Docker image
+        run: docker build -t carenova-user-auth:ci-test .g
