@@ -1,9 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using UserAuth.Api.Data;
 
 #nullable disable
 
 namespace UserAuth.Api.Migrations;
 
+[DbContext(typeof(AppDbContext))]
+[Migration("20260828140000_GCN19_AddProfilePicture")]
 public partial class GCN19_AddProfilePicture : Migration
 {
     protected override void Up(MigrationBuilder migrationBuilder)
