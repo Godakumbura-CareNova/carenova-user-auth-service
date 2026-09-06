@@ -128,9 +128,8 @@ app.Use(async (context, next) =>
 app.UseAuthorization();
 app.MapControllers();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
     await SeedAdminAsync(dbContext, passwordHasher, app.Configuration);
