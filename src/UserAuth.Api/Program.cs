@@ -25,11 +25,14 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOptions<JwtSettings>()
     .Bind(builder.Configuration.GetSection("JwtSettings"));
 
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:5173", "http://192.168.238.89:3000", "http://192.168.238.89:5173")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
