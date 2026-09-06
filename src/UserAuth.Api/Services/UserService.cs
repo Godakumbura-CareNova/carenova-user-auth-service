@@ -83,16 +83,14 @@ public class UserService : IUserService
             return null;
         }
 
-        var fullName = string.Join(" ", new[] { request.FirstName?.Trim(), request.LastName?.Trim() }
-            .Where(part => !string.IsNullOrWhiteSpace(part)));
+        user.FullName = request.FullName.Trim();
+        user.MobileNumber = request.MobileNumber.Trim();
+        user.LandPhoneNumber = request.LandPhoneNumber?.Trim() ?? string.Empty;
+        user.Address = request.Address.Trim();
+        user.DateOfBirth = request.DateOfBirth;
+        user.Gender = request.Gender.Trim();
 
-        if (!string.IsNullOrWhiteSpace(fullName))
-        {
-            user.FullName = fullName;
-            await _userRepository.UpdateAsync(user, cancellationToken);
-        }
-
-        return ToProfileDto(user);
+        return ToProfileDto(await _userRepository.UpdateAsync(user, cancellationToken));
     }
 
     public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto request, CancellationToken cancellationToken = default)
