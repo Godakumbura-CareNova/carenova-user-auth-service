@@ -7,7 +7,7 @@ on:
 
 jobs:
   docker:
-    name: Build and Push Docker Image
+    name: Build, Push, and Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -20,13 +20,23 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t ${{ secrets.DOCKERHUB_USERNAME }}/carenova-user-auth:latest \
-            .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Push Docker image
-        run: |
-          docker push \
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/carenova-user-auth:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/carenova-user-auth:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'carenova-user-auth'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          images: '${{ secrets.DOCKERHUB_USERNAME }}/carenova-user-auth:${{ github.sha }}'
