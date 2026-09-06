@@ -98,6 +98,10 @@ namespace UserAuth.Api.Migrations
                     b.Property<string>("PasswordHash")
                         .HasColumnType("longtext");
 
+                    b.Property<string>("ProfilePicturePath")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)

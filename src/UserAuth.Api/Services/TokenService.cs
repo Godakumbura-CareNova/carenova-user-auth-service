@@ -16,32 +16,40 @@ public class TokenService : ITokenService
     public TokenService(IOptions<JwtSettings> options)
     {
         _settings = options.Value;
-        if (string.IsNullOrWhiteSpace(_settings.Secret))
-        {
-            throw new InvalidOperationException("JWT signing key is not configured.");
-        }
     }
 
     public string GenerateToken(User user)
     {
-        var expiresAt = DateTime.UtcNow.AddMinutes(_settings.ExpiryInMinutes);
-        var claims = new[]
+        if (string.IsNullOrWhiteSpace(_settings.Secret))
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.FullName),
-            new Claim(ClaimTypes.Role, user.Role),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            throw new InvalidOperationException("JWT signing key is not configured.");
+        }
+
+        var role = RoleNames.TryNormalize(user.Role, out var normalizedRole)
+            ? normalizedRole
+            : RoleNames.Patient;
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, user.Email),
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Name, user.FullName),
+            new(ClaimTypes.Role, role),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_settings.Secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
         var token = new JwtSecurityToken(
             issuer: _settings.Issuer,
             audience: _settings.Audience,
             claims: claims,
-            expires: expiresAt,
-            signingCredentials: credentials);
+            expires: DateTime.UtcNow.AddMinutes(_settings.ExpiryInMinutes),
+            signingCredentials: credentials
+        );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

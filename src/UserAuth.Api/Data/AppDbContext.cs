@@ -29,6 +29,7 @@ public class AppDbContext : DbContext
             entity.Property(u => u.Gender).IsRequired().HasMaxLength(20);
             entity.Property(u => u.Role).IsRequired().HasMaxLength(50);
             entity.Property(u => u.CreatedAt).IsRequired();
+            entity.Property(u => u.ProfilePicturePath).HasMaxLength(500);
         });
 
         modelBuilder.Entity<PasswordResetToken>(entity =>

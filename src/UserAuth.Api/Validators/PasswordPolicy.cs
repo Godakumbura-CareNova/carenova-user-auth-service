@@ -11,7 +11,7 @@ public static class PasswordPolicy
     public const string RequirementsMessage =
         "Password must be at least 6 characters and include an uppercase letter, lowercase letter, number, and special character.";
 
-    public static bool IsStrong(string? password)
+    public static bool HasStrongPassword(string? password)
     {
         if (string.IsNullOrWhiteSpace(password))
         {

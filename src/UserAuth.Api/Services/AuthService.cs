@@ -40,7 +40,7 @@ public class AuthService : IAuthService
         _configuration = configuration;
     }
 
-    public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<LoginResponseDto?> LoginAsync(LoginDto request, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByEmailAsync(request.Email.Trim(), cancellationToken);
         if (user is null || string.IsNullOrWhiteSpace(user.PasswordHash))
@@ -59,6 +59,10 @@ public class AuthService : IAuthService
             throw new InactiveAccountException("This account is inactive.");
         }
 
+        var normalizedRole = RoleNames.TryNormalize(user.Role, out var role)
+            ? role
+            : RoleNames.Patient;
+
         return new LoginResponseDto
         {
             Token = _tokenService.GenerateToken(user),
@@ -66,8 +70,14 @@ public class AuthService : IAuthService
             UserId = user.Id,
             Email = user.Email,
             FullName = user.FullName,
-            Role = user.Role
+            Role = normalizedRole
         };
+    }
+
+    public Task LogoutAsync(CancellationToken cancellationToken = default)
+    {
+        // JWT is stateless; secure logout is client-side token disposal after this authorized call.
+        return Task.CompletedTask;
     }
 
     public async Task RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default)

@@ -59,3 +59,15 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 .dotnet_home/
+
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# User-specific files
+*.user
+*.suo
+
+# Local secrets
+appsettings.Local.json

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserAuth.Api.DTOs.Auth;
 using UserAuth.Api.Exceptions;
@@ -13,7 +14,7 @@ public class AuthController : ControllerBase
     private readonly IUserService _userService;
     private readonly IAuthService _authService;
     private readonly IValidator<RegisterRequestDto> _registerValidator;
-    private readonly IValidator<LoginRequestDto> _loginValidator;
+    private readonly IValidator<LoginDto> _loginValidator;
     private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
 
@@ -21,7 +22,7 @@ public class AuthController : ControllerBase
         IUserService userService,
         IAuthService authService,
         IValidator<RegisterRequestDto> registerValidator,
-        IValidator<LoginRequestDto> loginValidator,
+        IValidator<LoginDto> loginValidator,
         IValidator<ForgotPasswordDto> forgotPasswordValidator,
         IValidator<ResetPasswordDto> resetPasswordValidator)
     {
@@ -58,7 +59,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Login([FromBody] LoginDto request, CancellationToken cancellationToken)
     {
         var validationResult = await _loginValidator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
@@ -81,6 +82,15 @@ public class AuthController : ControllerBase
         {
             return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        await _authService.LogoutAsync(cancellationToken);
+        Response.Headers.CacheControl = "no-store";
+        return Ok(new { message = "Logout successful." });
     }
 
     [HttpPost("forgot-password")]

@@ -14,7 +14,7 @@ public class ResetPasswordValidator : AbstractValidator<ResetPasswordDto>
         RuleFor(x => x.NewPassword)
             .NotEmpty()
             .WithMessage("Password is required.")
-            .Must(PasswordPolicy.IsStrong)
+            .Must(PasswordPolicy.HasStrongPassword)
             .WithMessage(PasswordPolicy.RequirementsMessage);
 
         RuleFor(x => x.ConfirmPassword)

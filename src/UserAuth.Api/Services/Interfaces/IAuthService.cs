@@ -12,7 +12,8 @@ public enum PasswordResetOutcome
 
 public interface IAuthService
 {
-    Task<LoginResponseDto?> LoginAsync(LoginRequestDto request, CancellationToken cancellationToken = default);
+    Task<LoginResponseDto?> LoginAsync(LoginDto request, CancellationToken cancellationToken = default);
+    Task LogoutAsync(CancellationToken cancellationToken = default);
     Task RequestPasswordResetAsync(string email, CancellationToken cancellationToken = default);
     Task<PasswordResetOutcome> ResetPasswordAsync(string token, string newPassword, CancellationToken cancellationToken = default);
 }
