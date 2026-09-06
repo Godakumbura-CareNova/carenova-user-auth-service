@@ -54,4 +54,4 @@ jobs:
           path: TestResults/**/coverage.cobertura.xml
 
       - name: Build Docker image
-        run: docker build -t carenova-user-auth:ci-test .g
+        run: docker build -t carenova-user-auth:ci-test .
