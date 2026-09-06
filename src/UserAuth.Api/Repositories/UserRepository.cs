@@ -34,6 +34,7 @@ public class UserRepository : IUserRepository
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Users
+            .AsNoTracking()
             .SingleOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
@@ -57,5 +58,23 @@ public class UserRepository : IUserRepository
         _context.Users.Update(user);
         await _context.SaveChangesAsync(cancellationToken);
         return user;
+    }
+
+    public async Task<bool> DeleteAsync(User user, CancellationToken cancellationToken = default)
+    {
+        _context.Users.Remove(user);
+        return await _context.SaveChangesAsync(cancellationToken) > 0;
+    }
+
+    public async Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+        if (user is null)
+        {
+            return;
+        }
+
+        user.PasswordHash = newPasswordHash;
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

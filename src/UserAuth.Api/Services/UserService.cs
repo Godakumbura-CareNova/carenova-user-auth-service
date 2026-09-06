@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using UserAuth.Api.DTOs.Auth;
+using UserAuth.Api.DTOs.Profile;
 using UserAuth.Api.DTOs.User;
 using UserAuth.Api.Exceptions;
 using UserAuth.Api.Models;
@@ -68,6 +69,49 @@ public class UserService : IUserService
         };
     }
 
+    public async Task<ProfileDto?> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        return user is null ? null : ToProfileDto(user);
+    }
+
+    public async Task<ProfileDto?> UpdateProfileAsync(Guid userId, UpdateProfileDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return null;
+        }
+
+        user.FullName = request.FullName.Trim();
+        user.MobileNumber = request.MobileNumber.Trim();
+        user.LandPhoneNumber = request.LandPhoneNumber?.Trim() ?? string.Empty;
+        user.Address = request.Address.Trim();
+        user.DateOfBirth = request.DateOfBirth;
+        user.Gender = request.Gender.Trim();
+
+        return ToProfileDto(await _userRepository.UpdateAsync(user, cancellationToken));
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null || string.IsNullOrWhiteSpace(user.PasswordHash))
+        {
+            return false;
+        }
+
+        var verify = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.CurrentPassword.Trim());
+        if (verify == PasswordVerificationResult.Failed)
+        {
+            return false;
+        }
+
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.NewPassword.Trim());
+        await _userRepository.UpdateAsync(user, cancellationToken);
+        return true;
+    }
+
     public async Task<IReadOnlyList<UserDto>> GetAllUsersAsync(string? search, CancellationToken cancellationToken = default)
     {
         var users = await _userRepository.GetAllAsync(cancellationToken);
@@ -126,6 +170,17 @@ public class UserService : IUserService
         return ToUserDto(updated);
     }
 
+    public async Task<bool> DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, cancellationToken);
+        if (user is null)
+        {
+            return false;
+        }
+
+        return await _userRepository.DeleteAsync(user, cancellationToken);
+    }
+
     private static UserDto ToUserDto(User user)
     {
         var role = RoleNames.TryNormalize(user.Role, out var normalizedRole)
@@ -148,5 +203,25 @@ public class UserService : IUserService
         };
     }
 
-    private static string? AsOptional(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
+    private static ProfileDto ToProfileDto(User user)
+    {
+        return new ProfileDto
+        {
+            Id = user.Id,
+            FullName = user.FullName,
+            Email = user.Email,
+            MobileNumber = AsOptional(user.MobileNumber),
+            LandPhoneNumber = AsOptional(user.LandPhoneNumber),
+            Address = AsOptional(user.Address),
+            DateOfBirth = user.DateOfBirth == default ? null : user.DateOfBirth,
+            Gender = AsOptional(user.Gender),
+            HasProfilePicture = !string.IsNullOrWhiteSpace(user.ProfilePicturePath),
+            ProfilePictureUrl = user.ProfilePicturePath
+        };
+    }
+
+    private static string? AsOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value;
+    }
 }

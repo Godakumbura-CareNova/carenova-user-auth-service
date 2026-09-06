@@ -52,4 +52,11 @@ public class UsersController : ControllerBase
         var user = await _userService.UpdateAccountStatusAsync(id, request, cancellationToken);
         return user is null ? NotFound() : Ok(user);
     }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> DeleteUser(Guid id, CancellationToken cancellationToken)
+    {
+        var deleted = await _userService.DeleteUserAsync(id, cancellationToken);
+        return deleted ? NoContent() : NotFound();
+    }
 }
