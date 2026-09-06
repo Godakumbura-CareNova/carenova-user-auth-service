@@ -185,20 +185,23 @@ public class UserService : IUserService
 
     private static ProfileDto ToProfileDto(User user)
     {
-        var fullName = user.FullName?.Trim() ?? string.Empty;
-        var firstSpace = fullName.IndexOf(' ');
-
-        var firstName = firstSpace > 0 ? fullName[..firstSpace] : fullName;
-        var lastName = firstSpace > 0 && firstSpace < fullName.Length - 1
-            ? fullName[(firstSpace + 1)..]
-            : string.Empty;
-
         return new ProfileDto
         {
-            Id = user.Id.ToString(),
+            Id = user.Id,
+            FullName = user.FullName,
             Email = user.Email,
-            FirstName = firstName,
-            LastName = lastName
+            MobileNumber = AsOptional(user.MobileNumber),
+            LandPhoneNumber = AsOptional(user.LandPhoneNumber),
+            Address = AsOptional(user.Address),
+            DateOfBirth = user.DateOfBirth == default ? null : user.DateOfBirth,
+            Gender = AsOptional(user.Gender),
+            HasProfilePicture = false,
+            ProfilePictureUrl = null
         };
+    }
+
+    private static string? AsOptional(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value;
     }
 }

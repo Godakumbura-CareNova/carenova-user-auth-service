@@ -21,40 +21,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOptions<JwtSettings>()
     .Bind(builder.Configuration.GetSection("JwtSettings"));
 
-var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
-    ?? throw new InvalidOperationException("JWT settings are not configured.");
-
-if (string.IsNullOrWhiteSpace(jwtSettings.Secret)
-    || string.IsNullOrWhiteSpace(jwtSettings.Issuer)
-    || string.IsNullOrWhiteSpace(jwtSettings.Audience)
-    || jwtSettings.ExpiryInMinutes != 60)
-{
-    throw new InvalidOperationException("JWT settings must include secret, issuer, audience, and ExpiryInMinutes set to 60.");
-}
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtSettings.Issuer,
-            ValidateAudience = true,
-            ValidAudience = jwtSettings.Audience,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-    });
-
-builder.Services.AddAuthorization();
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:5173")
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
@@ -64,6 +35,33 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseInMemoryDatabase("CareNovaUserAuthDb"));
+
+var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
+    ?? throw new InvalidOperationException("JwtSettings configuration is missing.");
+
+if (string.IsNullOrWhiteSpace(jwtSettings.Secret))
+{
+    throw new InvalidOperationException("JwtSettings:Secret must be configured.");
+}
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterValidator>();
