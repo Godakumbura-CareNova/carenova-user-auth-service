@@ -1,4 +1,5 @@
 using FluentValidation;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserAuth.Api.DTOs.Auth;
 using UserAuth.Api.Exceptions;
@@ -64,9 +65,25 @@ public class AuthController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
-        var response = await _authService.LoginAsync(request, cancellationToken);
-        return response is null
-            ? Unauthorized(new { message = "Invalid email or password." })
-            : Ok(response);
+        try
+        {
+            var response = await _authService.LoginAsync(request, cancellationToken);
+            return response is null
+                ? Unauthorized(new { message = "Invalid email or password." })
+                : Ok(response);
+        }
+        catch (InactiveAccountException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        await _authService.LogoutAsync(cancellationToken);
+        Response.Headers.CacheControl = "no-store";
+        return Ok(new { message = "Logout successful." });
     }
 }

@@ -4,5 +4,5 @@ namespace UserAuth.Api.Services.Interfaces;
 
 public interface ITokenService
 {
-    (string Token, DateTime ExpiresAtUtc) GenerateToken(User user);
+    string GenerateToken(User user);
 }
