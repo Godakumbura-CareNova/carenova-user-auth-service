@@ -103,7 +103,7 @@ public class AuthService : IAuthService
 
         await _passwordResetRepository.AddAsync(resetToken, cancellationToken);
 
-        var frontendBaseUrl = _configuration["FrontendBaseUrl"] ?? "http://localhost:3000";
+        var frontendBaseUrl = (_configuration["FrontendBaseUrl"] ?? "http://localhost:3000").TrimEnd('/');
         var resetLink = $"{frontendBaseUrl}/reset-password?token={token}";
 
         await _emailService.SendPasswordResetEmailAsync(user.Email, resetLink, cancellationToken);
