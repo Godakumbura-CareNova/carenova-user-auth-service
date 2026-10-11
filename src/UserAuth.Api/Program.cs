@@ -86,6 +86,12 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IDoctorPatientContactService, DoctorPatientContactService>();
+builder.Services.AddHttpClient<UserAuth.Api.Clients.AppointmentAccessClient>(client => {
+    if (Uri.TryCreate(builder.Configuration["AppointmentIntegration:BaseUrl"], UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https")
+        client.BaseAddress = new Uri(uri.ToString().TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(10);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
 
 var app = builder.Build();
 
