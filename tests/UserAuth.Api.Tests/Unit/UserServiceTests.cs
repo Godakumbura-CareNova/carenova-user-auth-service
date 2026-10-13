@@ -22,7 +22,7 @@ public class UserServiceTests
             });
 
         var service = new UserService(repository.Object);
-        var request = new RegisterRequestDto
+        var request = new RegisterDto
         {
             FirstName = "Nimal",
             LastName = "Perera",
@@ -51,7 +51,7 @@ public class UserServiceTests
         repository.Setup(r => r.EmailExistsAsync("existing@example.com", It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         var service = new UserService(repository.Object);
-        var request = new RegisterRequestDto
+        var request = new RegisterDto
         {
             FirstName = "Existing",
             LastName = "User",

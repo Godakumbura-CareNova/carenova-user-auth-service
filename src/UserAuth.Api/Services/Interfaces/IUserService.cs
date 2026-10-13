@@ -6,7 +6,7 @@ namespace UserAuth.Api.Services.Interfaces;
 
 public interface IUserService
 {
-    Task<UserResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default);
+    Task<UserDto> RegisterAsync(RegisterDto request, CancellationToken cancellationToken = default);
     Task<ProfileDto?> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default);
     Task<ProfileDto?> UpdateProfileAsync(Guid userId, UpdateProfileDto request, CancellationToken cancellationToken = default);
     Task<bool> ChangePasswordAsync(Guid userId, ChangePasswordDto request, CancellationToken cancellationToken = default);

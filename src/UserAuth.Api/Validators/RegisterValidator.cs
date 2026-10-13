@@ -3,23 +3,17 @@ using UserAuth.Api.DTOs.Auth;
 
 namespace UserAuth.Api.Validators;
 
-public class RegisterValidator : AbstractValidator<RegisterRequestDto>
+public class RegisterValidator : AbstractValidator<RegisterDto>
 {
     public RegisterValidator()
     {
         RuleFor(x => x.FirstName)
             .NotEmpty()
-            .When(x => string.IsNullOrWhiteSpace(x.FullName))
             .WithMessage("First name is required.");
 
         RuleFor(x => x.LastName)
             .NotEmpty()
-            .When(x => string.IsNullOrWhiteSpace(x.FullName))
             .WithMessage("Last name is required.");
-
-        RuleFor(x => x.FullName)
-            .Must(fullName => string.IsNullOrWhiteSpace(fullName) || fullName.Trim().Length >= 2)
-            .WithMessage("Full name must be at least 2 characters.");
 
         RuleFor(x => x.Email)
             .NotEmpty()

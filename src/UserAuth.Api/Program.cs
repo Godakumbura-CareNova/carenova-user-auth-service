@@ -38,7 +38,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "server=localhost;port=3306;database=carenova_user_auth;uid=root;pwd=Password123!";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("ConnectionStrings:DefaultConnection must be configured.");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -139,9 +140,16 @@ app.Run();
 
 static async Task SeedAdminAsync(AppDbContext dbContext, IPasswordHasher<User> passwordHasher, IConfiguration configuration)
 {
-    var adminEmail = configuration["SeedAdmin:Email"] ?? "admin@carenova.org";
-    var adminPassword = configuration["SeedAdmin:Password"] ?? "Admin@12345";
-    var adminFullName = configuration["SeedAdmin:FullName"] ?? "System Administrator";
+    var adminEmail = configuration["SeedAdmin:Email"];
+    var adminPassword = configuration["SeedAdmin:Password"];
+    var adminFullName = configuration["SeedAdmin:FullName"];
+
+    if (string.IsNullOrWhiteSpace(adminEmail)
+        || string.IsNullOrWhiteSpace(adminPassword)
+        || string.IsNullOrWhiteSpace(adminFullName))
+    {
+        return;
+    }
 
     var exists = await dbContext.Users.AnyAsync(u => u.Email.ToLower() == adminEmail.ToLower());
     if (exists)
