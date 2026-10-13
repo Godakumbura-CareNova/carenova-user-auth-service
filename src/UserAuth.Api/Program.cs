@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Prometheus;
 using UserAuth.Api.Config;
 using UserAuth.Api.Data;
 using UserAuth.Api.Models;
@@ -134,7 +135,9 @@ app.Use(async (context, next) =>
 });
 
 app.UseAuthorization();
+app.UseHttpMetrics();
 app.MapControllers();
+app.MapMetrics();
 
 using (var scope = app.Services.CreateScope())
 {
