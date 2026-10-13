@@ -20,7 +20,7 @@ public class UserService : IUserService
         _passwordHasher = passwordHasher ?? new PasswordHasher<User>();
     }
 
-    public async Task<UserResponseDto> RegisterAsync(RegisterRequestDto request, CancellationToken cancellationToken = default)
+    public async Task<UserDto> RegisterAsync(RegisterDto request, CancellationToken cancellationToken = default)
     {
         var normalizedEmail = request.Email.Trim();
 
@@ -29,12 +29,7 @@ public class UserService : IUserService
             throw new DuplicateEmailException($"A user with email '{normalizedEmail}' already exists.");
         }
 
-        var fullName = request.FullName?.Trim();
-        if (string.IsNullOrWhiteSpace(fullName))
-        {
-            fullName = string.Join(" ", new[] { request.FirstName?.Trim(), request.LastName?.Trim() }
-                .Where(part => !string.IsNullOrWhiteSpace(part)));
-        }
+        var fullName = string.Join(" ", new[] { request.FirstName.Trim(), request.LastName.Trim() });
 
         var user = new User
         {
@@ -53,20 +48,7 @@ public class UserService : IUserService
 
         var createdUser = await _userRepository.AddAsync(user, cancellationToken);
 
-        return new UserResponseDto
-        {
-            Id = createdUser.Id,
-            FullName = createdUser.FullName,
-            Email = createdUser.Email,
-            MobileNumber = createdUser.MobileNumber,
-            LandPhoneNumber = createdUser.LandPhoneNumber,
-            Address = createdUser.Address,
-            DateOfBirth = createdUser.DateOfBirth,
-            Gender = createdUser.Gender,
-            Role = createdUser.Role,
-            IsActive = createdUser.IsActive,
-            CreatedAt = createdUser.CreatedAt
-        };
+        return ToUserDto(createdUser);
     }
 
     public async Task<ProfileDto?> GetProfileAsync(Guid userId, CancellationToken cancellationToken = default)

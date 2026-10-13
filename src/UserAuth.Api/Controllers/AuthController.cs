@@ -13,7 +13,7 @@ public class AuthController : ControllerBase
 {
     private readonly IUserService _userService;
     private readonly IAuthService _authService;
-    private readonly IValidator<RegisterRequestDto> _registerValidator;
+    private readonly IValidator<RegisterDto> _registerValidator;
     private readonly IValidator<LoginDto> _loginValidator;
     private readonly IValidator<ForgotPasswordDto> _forgotPasswordValidator;
     private readonly IValidator<ResetPasswordDto> _resetPasswordValidator;
@@ -21,7 +21,7 @@ public class AuthController : ControllerBase
     public AuthController(
         IUserService userService,
         IAuthService authService,
-        IValidator<RegisterRequestDto> registerValidator,
+        IValidator<RegisterDto> registerValidator,
         IValidator<LoginDto> loginValidator,
         IValidator<ForgotPasswordDto> forgotPasswordValidator,
         IValidator<ResetPasswordDto> resetPasswordValidator)
@@ -35,7 +35,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterRequestDto request, CancellationToken cancellationToken)
+    public async Task<IActionResult> Register([FromBody] RegisterDto request, CancellationToken cancellationToken)
     {
         var validationResult = await _registerValidator.ValidateAsync(request, cancellationToken);
         if (!validationResult.IsValid)
